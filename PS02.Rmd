@@ -1,6 +1,6 @@
 ---
 title: "STAT/MATH 495: Problem Set 02"
-author: "WRITE YOUR NAMES HERE"
+author: "Tasheena Narraidoo, Meron Gedrago, Wayne Maumbe"
 date: "2017-09-19"
 output:
   html_document:
