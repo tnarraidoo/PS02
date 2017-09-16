@@ -20,10 +20,26 @@ library(tidyverse)
 # Note the relative file path, and not absolute file path:
 # http://www.coffeecup.com/help/articles/absolute-vs-relative-pathslinks/
 train <- read_csv("data/train.csv")
+test <- read_csv("data/test.csv")
+View(test)
 ```
 
 ```{r}
-#names(train)
+names(train)
+
+splines_model <- smooth.spline(x=train$full_sq, y=train$price_doc, df = 6)
+output <- predict(splines_model, new_data = test) %>% 
+  tibble::as.tibble()
+#View(output)
+
+splines_model_tidy <- splines_model %>% 
+  broom::augment() 
+plot <- ggplot(splines_model_tidy, aes(x=x)) +
+  geom_point(aes(y=y)) +
+  geom_line(aes(y=.fitted), col="blue")
+plot
+plot +
+  geom_point(data=output, aes(x=x, y=y), col="red")
 ```
 
 # Exploratory Data Analysis
