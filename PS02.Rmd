@@ -16,33 +16,14 @@ knitr::opts_chunk$set(echo = TRUE, fig.width=8, fig.height=4.5)
 
 # Load packages
 library(tidyverse)
-
+library(splines)
 # Note the relative file path, and not absolute file path:
 # http://www.coffeecup.com/help/articles/absolute-vs-relative-pathslinks/
 train <- read_csv("data/train.csv")
+test <- read_csv("data/test.csv")
+set.seed(495)
 ```
 
-```{r}
-#names(train)
-```
+# Introduction
 
-# Exploratory Data Analysis
-
-```{r}
-
-```
-
-
-# Model Fit
-
-```{r}
-
-```
-
-
-# Create Submission File
-
-```{r}
-
-```
 
