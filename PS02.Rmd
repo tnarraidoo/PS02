@@ -10,20 +10,151 @@ output:
     collapsed: false
     smooth_scroll: false
 ---
-
+  
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, fig.width=8, fig.height=4.5)
-
 # Load packages
 library(tidyverse)
 library(splines)
-# Note the relative file path, and not absolute file path:
-# http://www.coffeecup.com/help/articles/absolute-vs-relative-pathslinks/
+library(reshape)
+library(broom)
+# load the train set
 train <- read_csv("data/train.csv")
+# load the test set
 test <- read_csv("data/test.csv")
 set.seed(495)
 ```
 
 # Introduction
+
+Our goal is to fit a spline model to predict the price of houses in Russia. We are using the Sberbank Russian Housing Market data on Kaggle for our analysis.
+
+
+# Exploratory Data Analysis
+
+Our training set has 292 variables including the price of the property. 
+
+
+The 'full_sq' variable represents total area in square meters, including loggias, balconies and other non-residential areas for each property. We believe the amount of square meters that the user would be buying would matter most. This is because, in realty, how a property is values is per square meter for a particular location.
+
+To check our assumption, we turn to correlation between price_doc (which is the sale price) and the other variable. Indeed, the variable with the highest correlation value with price_doc (other than itself) is full_sq(total area) with a value of 0.3418405.
+
+```{r, warning=FALSE}
+#calculate correlation matrix by looking at numeric variables
+calc_cor <- train[, sapply(train, is.numeric)]
+my_cor <- as.matrix(cor(calc_cor))
+#arrange the matrix in 3 column format(X1,X2,value)
+my_cor_melt <- arrange(melt(my_cor), -abs(value))
+#find the variable with highest correlation with price_doc
+filter(my_cor_melt, X1 == "price_doc" & value > abs(.3) & value < abs(1))
+```
+
+Since, we have to choose a single predictor variable for our spline model, we have decided to go with the variable with the highest correlation with sale price (i.e. total area)
+
+We now plot the area against the sale price to investigate further.
+
+```{r, warning=FALSE, message=FALSE}
+#plot area vs price
+ggplot(train, aes(x=full_sq, y=price_doc)) + geom_point() + ggtitle("Russia's Housing Market: Price vs Area") + xlab("Area(sq meters)") + ylab("Price(units)")
+```
+
+From the above graph, we see that there is an outlier above 5000 sq meters and we have many properties with very low areas. To refine our training set, we have removed the outlier which is above 5000 sq meters and we have also removed those with an area less or equal to 5 sq meters. The refined training set would enable us to get more accurate predictions.
+
+```{r, warning=FALSE}
+# select the full_sq and price_doc variables from the train set, omiting observations with NAs for our predictor variable, and we remove the outliers for area > 5000 and area <=5.
+dt2 <- train %>%
+  filter(!is.na(full_sq)) %>%
+  filter(full_sq < 5000) %>% 
+  filter(full_sq > 5) %>% 
+  select(full_sq,price_doc)
+```
+
+# Model Fit
+
+Following our exploratory data analysis, for our spline model, we have decided to choose the 'full_sq'(total area) variable as our predictor variable. We have created 2 spline models, one with B-Spline and one with Smoothing Spline to see how they compare to each other.
+
+##  B-spline basis matrix model
+
+For our first spline model, we have decided to use the cubic B-spline basis matrix for a polynomial spline regression. It creates a basis matrix for generating the family of piecewise polynomials on specifying knots and degrees of freedom.
+
+```{r}
+#create our cubic B-Spline model, with df=7
+#used df =7 to be consistent with our smoothing spline model 
+m1 <- lm(price_doc ~ bs(full_sq,7), data=dt2)
+```
+
+```{r, warning=FALSE}
+# select the full_sq and id variables from the test set to fit our model
+dt3 <- test %>%
+  select(full_sq,id)
+
+# make prediction on the test set, based on our spline model and add our price prediction to our 2-variables test set
+dt3$price_doc <- predict(m1,dt3) 
+
+#plot area vs price
+ggplot(dt3, aes(x=full_sq, y=price_doc)) + geom_point() + labs(y = "fitted value(units)") + labs(x = "square meters") +ggtitle("Predicted Housing Prices")
+
+#select a dataframe with id and our predicted price for submission
+predA <- dt3 %>%
+  select(id,price_doc)
+```
+
+We have fitted our prediction on the above graph. As expected, those with a higher area are expected to cost more. 
+
+## Smoothing spline model
+
+We have decided to turn to the smoothing spline model which does not require us to choose a particular number of knots. For this method, we have a knot for each $x_i$. We have decided to use cross validation on our original training set to obtain the appropriate degrees of freedom. This is because the test set is also expected to contain outliers and using the refined training set would result in an 'over-fitting'(too much 'wiggliness') situation. We can see that the degrees of freedom is around 7.
+ 
+```{r, warning=FALSE}
+#use cross validation to find appropriate degrees of freedom
+finding_df <- smooth.spline(train$full_sq, train$price_doc, cv=T)
+finding_df
+```
+
+Following cross validation, for our second model, we use a degrees of freedom of  7 which we then fit in our refined training set.
+ 
+```{r, warning=FALSE}
+#fit our smooth spline model
+m2 <- smooth.spline(dt2$full_sq, dt2$price_doc, df=7)
+m2
+#make our prediction on the test set
+pred <- predict(m2, dt3$full_sq)
+pred2 <- data.frame(dt3$id,pred$y)
+
+pred3 <- pred2 %>% 
+  select(id = dt3.id, price_doc = pred.y)
+```
+
+## Comparing the two models
+
+We now want to compare how the two spline models. From the graphs, we can see that the smoothing spline line better reflects housing prices.
+
+```{r}
+#find range for predictor variable
+full_sq_lims <- range(dt2$full_sq)
+fullsq.grid<-seq(from=full_sq_lims[1], to = full_sq_lims[2])
+
+#plot the training set data points
+plot(dt2$full_sq, dt2$price_doc, col="grey",xlab="square meters", ylab="price(units)")
+#plot cubic B-spline line
+points(fullsq.grid, predict(m1,list(full_sq = fullsq.grid)), col="blue", lwd=2,type="l")
+#plot smoothing spline line
+lines(m2,col="red",lwd=2)
+legend("topright",c("Fitted Smoothing Spline with 7 df","Fitted Cubic B-Spline"), col=c("red","blue"),lwd=2)
+title("Comparing the two splines models")
+```
+
+# Create Submission File
+
+```{r}
+#write_csv(predA,"submission.csv") #B-Spline model
+write_csv(pred3,"submission.csv") #Smoothing Spline model
+```
+
+# Conclusion
+
+Our B-Spline model fared pretty well, scoring .41147 while our smoothing spline model scored .40937 as expected from the graphs. Our smoothing spline model got a lower Root Mean Squared Logarithmic Error (RMSE) and thus performed slightly better than the B-Spline model.
+
+
 
 
