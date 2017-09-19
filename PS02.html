@@ -229,7 +229,7 @@ div.tocify {
 <div id="exploratory-data-analysis" class="section level1">
 <h1>Exploratory Data Analysis</h1>
 <p>Our training set has 292 variables including the price of the property.</p>
-<p>The ‘full_sq’ variable represents total area in square meters, including loggias, balconies and other non-residential areas for each property. We believe the amount of square meters that the user would be buying would matter most. This is because, in realty, how a property is values is per square meter for a particular location.</p>
+<p>The ‘full_sq’ variable represents total area in square meters, including loggias, balconies and other non-residential areas for each property. We believe the amount of square meters that the user would be buying would matter most. This is because, in realty, a property is valued per square meter for a particular location.</p>
 <p>To check our assumption, we turn to correlation between price_doc (which is the sale price) and the other variable. Indeed, the variable with the highest correlation value with price_doc (other than itself) is full_sq(total area) with a value of 0.3418405.</p>
 <pre class="r"><code>#calculate correlation matrix by looking at numeric variables
 calc_cor &lt;- train[, sapply(train, is.numeric)]

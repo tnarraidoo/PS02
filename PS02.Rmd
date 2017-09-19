@@ -35,7 +35,7 @@ Our goal is to fit a spline model to predict the price of houses in Russia. We a
 Our training set has 292 variables including the price of the property. 
 
 
-The 'full_sq' variable represents total area in square meters, including loggias, balconies and other non-residential areas for each property. We believe the amount of square meters that the user would be buying would matter most. This is because, in realty, how a property is values is per square meter for a particular location.
+The 'full_sq' variable represents total area in square meters, including loggias, balconies and other non-residential areas for each property. We believe the amount of square meters that the user would be buying would matter most. This is because, in realty, a property is valued per square meter for a particular location.
 
 To check our assumption, we turn to correlation between price_doc (which is the sale price) and the other variable. Indeed, the variable with the highest correlation value with price_doc (other than itself) is full_sq(total area) with a value of 0.3418405.
 
