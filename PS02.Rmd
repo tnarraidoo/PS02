@@ -40,12 +40,12 @@ The 'full_sq' variable represents total area in square meters, including loggias
 To check our assumption, we turn to correlation between price_doc (which is the sale price) and the other variable. Indeed, the variable with the highest correlation value with price_doc (other than itself) is full_sq(total area) with a value of 0.3418405.
 
 ```{r, warning=FALSE}
-#calculate correlation matrix by looking at numeric variables
+# calculate correlation matrix by looking at numeric variables
 calc_cor <- train[, sapply(train, is.numeric)]
 my_cor <- as.matrix(cor(calc_cor))
-#arrange the matrix in 3 column format(X1,X2,value)
+# arrange the matrix in 3 column format(X1,X2,value)
 my_cor_melt <- arrange(melt(my_cor), -abs(value))
-#find the variable with highest correlation with price_doc
+# find the variable with highest correlation with price_doc
 filter(my_cor_melt, X1 == "price_doc" & value > abs(.3) & value < abs(1))
 ```
 
